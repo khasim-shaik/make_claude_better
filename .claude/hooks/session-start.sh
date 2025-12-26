@@ -13,8 +13,9 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 DATE=$(date +%Y-%m-%d)
 
 # Limit output to prevent context bloat (hook has 15s timeout)
+# Note: With slim tracker + archive strategy, files are small by design
 MAX_STATE_LINES=100
-MAX_LOG_LINES=80
+MAX_LOG_LINES=100
 MAX_GIT_LINES=20
 
 echo "## Context Auto-Restored"
@@ -43,14 +44,25 @@ else
     echo ""
 fi
 
-# 2. Read today's log if it exists
-if [ -f "$PROJECT_DIR/docs/logs/$DATE.md" ]; then
-    echo "---"
-    echo ""
-    echo "### Today's Activity"
-    echo ""
-    head -n $MAX_LOG_LINES "$PROJECT_DIR/docs/logs/$DATE.md"
-    echo ""
+# 2. Read most recent daily log (handles work gaps - e.g., last worked Nov 29, returning Dec 26)
+LOGS_DIR="$PROJECT_DIR/docs/logs"
+if [ -d "$LOGS_DIR" ]; then
+    # Find most recent .md file (excluding archive directory)
+    RECENT_LOG=$(find "$LOGS_DIR" -maxdepth 1 -name "*.md" -type f 2>/dev/null | sort -r | head -1)
+
+    if [ -n "$RECENT_LOG" ] && [ -f "$RECENT_LOG" ]; then
+        LOG_DATE=$(basename "$RECENT_LOG" .md)
+        echo "---"
+        echo ""
+        if [ "$LOG_DATE" = "$DATE" ]; then
+            echo "### Today's Activity"
+        else
+            echo "### Last Session ($LOG_DATE)"
+        fi
+        echo ""
+        head -n $MAX_LOG_LINES "$RECENT_LOG"
+        echo ""
+    fi
 fi
 
 # 3. Quick git status for code state awareness

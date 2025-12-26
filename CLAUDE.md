@@ -17,22 +17,23 @@ This repository contains an automated context management system for Claude Code 
 
 ---
 
-## The 2-File System
+## The 2-File System (Plus Archive)
 
-| File | Audience | Purpose | Review Cadence |
-|------|----------|---------|----------------|
-| `docs/implementation_tracker.md` | Engineering Leadership | Strategic: weekly roadmap, decisions, blockers | Weekly |
-| `docs/logs/YYYY-MM-DD.md` | Team Lead | Tactical: daily tasks, code changes, session context | Daily |
+| File | Audience | Auto-Loaded | Target Size |
+|------|----------|-------------|-------------|
+| `docs/implementation_tracker.md` | Engineering Leadership | Yes | <100 lines |
+| `docs/logs/YYYY-MM-DD.md` | Team Lead | Yes (most recent) | <100 lines |
+| `docs/implementation_archive.md` | Reference | No | Unlimited |
 
-### Implementation Tracker (Strategic)
-- Weekly roadmap with planned deliverables
-- Previous weeks history (milestones hit)
+### Implementation Tracker (Strategic - KEEP SLIM)
+- Executive summary (2-3 sentences)
+- Weekly roadmap (brief status per week)
 - Current week progress (completed/in-progress/blocked)
 - Next week preview
-- Key decisions log
-- Bugs fixed
-- Current blockers
-- Questions for leadership
+- Active blockers only
+- Quick links to archive
+
+**Important**: Keep under 100 lines! Use `/archive-week` to move completed weeks to archive.
 
 ### Daily Log (Tactical)
 - Completed tasks with timestamps
@@ -40,6 +41,12 @@ This repository contains an automated context management system for Claude Code 
 - Decisions made today
 - Next steps (immediate resume point)
 - Notes (scratchpad, edge cases, links)
+
+### Implementation Archive (Historical - NOT Auto-Loaded)
+- Full week-by-week history
+- Complete decision log
+- Complete bug log
+- Technical debt items
 
 ---
 
@@ -124,21 +131,24 @@ After completing significant tasks, automatically:
 
 ## Slash Commands
 
-- `/restore` - Restore full context from documentation (~4-6K tokens)
+- `/restore` - Restore full context from documentation (~3-4K tokens)
 - `/save-state` - Manually save current state
 - `/context-status` - Check current context usage
+- `/archive-week` - Move completed weeks to archive (keeps tracker slim)
 
 ---
 
 ## Session Start (AUTOMATIC via Hook)
 
 The SessionStart hook automatically runs `.claude/hooks/session-start.sh` which:
-1. Reads `docs/implementation_tracker.md`
-2. Reads `docs/logs/YYYY-MM-DD.md` for today (if exists)
+1. Reads `docs/implementation_tracker.md` (slim, <100 lines)
+2. Reads the **most recent** daily log (handles work gaps gracefully)
 3. Shows `git status` and recent commits
 4. Shows current context usage
 
 **You don't need to run /restore manually** - it happens automatically!
+
+**Work gaps handled**: If you last worked on Nov 29 and return Dec 26, the Nov 29 log is loaded (most recent), not today's empty log.
 
 Use `/restore` only if you need to force a re-read after manually editing docs/.
 
@@ -170,19 +180,23 @@ make_claude_better/
 │   ├── commands/              # Slash commands (manual override)
 │   │   ├── restore.md
 │   │   ├── save-state.md
-│   │   └── context-status.md
+│   │   ├── context-status.md
+│   │   └── archive-week.md    # Archive completed weeks
 │   ├── hooks/                 # TRUE AUTOMATION
 │   │   ├── session-start.sh   # Auto-restore on session start
 │   │   ├── pre-compact.sh     # Auto-backup before compaction
 │   │   └── estimate-tokens.sh # Real token usage from transcript
 │   └── settings.json          # Hook configuration
 ├── docs/                      # State files (the "hard drive")
-│   ├── implementation_tracker.md  # Strategic (leadership review)
+│   ├── implementation_tracker.md  # Strategic - KEEP SLIM (<100 lines)
+│   ├── implementation_archive.md  # Historical - NOT auto-loaded
 │   ├── development_guide.md       # Architecture reference
-│   └── logs/                      # Daily logs (team lead review)
-│       └── YYYY-MM-DD.md
+│   └── logs/                      # Daily logs (most recent only)
+│       ├── YYYY-MM-DD.md          # Most recent log (auto-loaded)
+│       └── archive/               # Old logs (NOT auto-loaded)
 ├── templates/                 # Templates for new projects
 │   ├── implementation_tracker.template.md
+│   ├── implementation_archive.template.md
 │   ├── daily_log.template.md
 │   └── development_guide.template.md
 ├── install.sh                 # One-command installation
@@ -208,7 +222,17 @@ Save all context to structured files **before** compacting, enabling:
 | Method | Tokens to Restore | Quality |
 |--------|-------------------|---------|
 | Native auto-compact | 25-40K | Lossy |
-| This system | 4-6K | Lossless |
+| This system | ~3-4K | Lossless |
+
+**Context Budget on Session Start:**
+| Component | Target Tokens | Target Lines |
+|-----------|---------------|--------------|
+| Implementation Tracker | ~1500 | <100 |
+| Daily Log (most recent) | ~1500 | <100 |
+| Git Status | ~300 | ~20 |
+| **Total** | **~3400** | ~220 |
+
+This leaves 196K+ tokens for actual work!
 
 ---
 

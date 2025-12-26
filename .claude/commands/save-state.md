@@ -3,7 +3,7 @@
 **Purpose**: Preserve current development context to documentation files for later restoration.
 
 This command saves to **2 files** with distinct audiences:
-- `docs/implementation_tracker.md` - Strategic (for engineering leadership)
+- `docs/implementation_tracker.md` - Strategic (for engineering leadership) - **KEEP SLIM**
 - `docs/logs/YYYY-MM-DD.md` - Tactical (for team lead daily review)
 
 ---
@@ -27,6 +27,11 @@ This command saves to **2 files** with distinct audiences:
 ### 1. Update Implementation Tracker (Strategic)
 **File**: `docs/implementation_tracker.md`
 
+**IMPORTANT: Keep this file under 100 lines!**
+- This file is auto-loaded on session start
+- Large files defeat the purpose of context management
+- Move completed weeks to `docs/implementation_archive.md`
+
 **Update These Sections**:
 
 #### Current Week
@@ -34,27 +39,21 @@ This command saves to **2 files** with distinct audiences:
 - Move completed items from "In Progress" to "Completed"
 - Add any new blocked items
 
-#### Key Decisions Log
-- Add any new architectural/technical decisions made
-- Include date, decision, rationale, impact
-
-#### Bugs Fixed
-- Add any bugs fixed today
-- Include root cause and resolution
-
-#### Current Blockers
+#### Active Blockers
 - Add new blockers encountered
 - Update status of existing blockers
 
-#### Next Week (if applicable)
+#### Next Week Preview (if applicable)
 - Update priorities based on progress
-- Note any new dependencies
+
+**DO NOT add to tracker (put in archive instead)**:
+- Detailed decision logs (brief mentions OK)
+- Full bug descriptions
+- Technical debt items
 
 **Example Update**:
 ```markdown
-## Current Week (Week 1: 12/24 - 12/29) 🔄
-
-**Status**: 90% complete
+## Current Week
 
 ### Completed
 - [x] SessionStart hook implementation
@@ -67,7 +66,28 @@ This command saves to **2 files** with distinct audiences:
 
 ---
 
-### 2. Update Today's Daily Log (Tactical)
+### 2. Log Rotation (Before Creating Today's Log)
+
+**Check if switching days:**
+```bash
+# If there's an existing log that's NOT today's date, archive it first
+ls docs/logs/*.md 2>/dev/null | head -1
+```
+
+**If old log exists, archive it:**
+```bash
+# Create archive directory if needed
+mkdir -p docs/logs/archive/YYYY-MM
+
+# Move old log to archive
+mv docs/logs/OLD-DATE.md docs/logs/archive/YYYY-MM/
+```
+
+**Why?** Only ONE log file should exist in `docs/logs/` - the most recent one. This ensures session-start loads the right context regardless of work gaps.
+
+---
+
+### 3. Update Today's Daily Log (Tactical)
 **File**: `docs/logs/YYYY-MM-DD.md`
 
 **Update These Sections**:
@@ -95,26 +115,51 @@ Update with current work state:
 - `.claude/hooks/session-start.sh` (lines 26-44)
 
 **Approach/Thinking**:
-Consolidating current_state and session_state into implementation_tracker.
-Daily log will handle all tactical/session context.
+Consolidating to slim tracker + archive strategy.
 
 **Uncommitted Changes**:
-- Modified session-start.sh to read implementation_tracker
+- Modified session-start.sh
 - Created new templates
 
 **Next Immediate Action**:
-Update save-state.md command to use new file structure
+Update save-state.md command
 ```
 
 #### Decisions Made Today
 - Add any decisions with rationale
+- These also go in `implementation_archive.md` for permanent record
 
 #### Notes
 - Update scratchpad, edge cases, links as needed
 
 ---
 
-### 3. Check Git Status
+### 4. Update Archive (If Decisions/Bugs Today)
+**File**: `docs/implementation_archive.md`
+
+If you made key decisions or fixed bugs today:
+- Add to "Full Decision Log" table
+- Add to "Full Bug Log" table
+
+This file is NOT auto-loaded, so it can grow without affecting context.
+
+---
+
+### 5. Size Check
+**Run**:
+```bash
+wc -l docs/implementation_tracker.md
+```
+
+**If over 100 lines**, suggest:
+```
+⚠️ Implementation tracker is X lines (target: <100).
+Consider running /archive-week to move completed weeks to archive.
+```
+
+---
+
+### 6. Check Git Status
 **Run**:
 ```bash
 git status
@@ -124,8 +169,8 @@ Note uncommitted changes in the daily log's "Current Task" section.
 
 ---
 
-### 4. Estimate Context Usage
-Run the token estimation script:
+### 7. Estimate Context Usage
+**Run**:
 ```bash
 ./.claude/hooks/estimate-tokens.sh
 ```
@@ -138,47 +183,67 @@ Include result in daily log's "Context Status" section.
 
 ### Success Message
 ```markdown
-💾 **Session State Saved Successfully**
+**Session State Saved**
 
 **Updated Files**:
-- ✅ docs/implementation_tracker.md (strategic: decisions, blockers, progress)
-- ✅ docs/logs/YYYY-MM-DD.md (tactical: tasks, code changes, session context)
+- docs/implementation_tracker.md (X lines)
+- docs/logs/YYYY-MM-DD.md
 
 **Summary**:
 - [X] tasks completed
-- [Y] new decisions documented
-- [Z] files modified
+- [Y] files modified
 
 **Context Status**: ~X% ([status])
 
-All context safely preserved. Use `/restore` to reload anytime.
+Context preserved. Use `/restore` to reload anytime.
+```
+
+### With Size Warning
+```markdown
+**Session State Saved**
+
+**Updated Files**:
+- docs/implementation_tracker.md (125 lines)
+- docs/logs/YYYY-MM-DD.md
+
+**Summary**:
+- [X] tasks completed
+
+**Context Status**: ~X%
+
+Implementation tracker is over 100 lines. Run `/archive-week` to keep it slim.
 ```
 
 ---
 
 ## File Purposes Reminder
 
-| File | Audience | Contains |
-|------|----------|----------|
-| `implementation_tracker.md` | Engineering Leadership | Weekly roadmap, decisions, bugs, blockers, next steps |
-| `daily_log.md` | Team Lead | Daily tasks, code changes, current work, session context, notes |
+| File | Audience | Auto-Loaded | Target Size |
+|------|----------|-------------|-------------|
+| `implementation_tracker.md` | Leadership | Yes | <100 lines |
+| `implementation_archive.md` | Reference | No | Unlimited |
+| `docs/logs/YYYY-MM-DD.md` | Team Lead | Yes (most recent) | <100 lines |
 
 ---
 
 ## Best Practices
 
 ### Implementation Tracker (Strategic)
-- Keep high-level, leadership-readable
-- Focus on milestones, not details
-- Update weekly roadmap status
-- Document decisions that affect project direction
+- Keep under 100 lines
+- Focus on current week only
+- Brief status updates
+- Archive completed weeks
 
 ### Daily Log (Tactical)
 - Be detailed - this is for resume context
 - Include file:line references
 - Capture current thinking/approach
 - Note uncommitted changes
-- Update scratchpad with temp notes
+
+### Archive (Historical)
+- Add decisions and bugs here
+- Keep full history
+- Never auto-loaded
 
 ---
 
@@ -188,7 +253,8 @@ All context safely preserved. Use `/restore` to reload anytime.
 After saving, if context is critical:
 1. Confirm all context is saved
 2. Compact conversation
-3. Use `/restore` to reload with ~5K tokens
+3. Use `/restore` to reload with ~3K tokens
 
 ### Normal Context
 Continue working. State is safely preserved in docs/.
+
