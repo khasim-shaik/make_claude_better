@@ -16,6 +16,7 @@ DATE=$(date +%Y-%m-%d)
 # Note: With slim tracker + archive strategy, files are small by design
 MAX_STATE_LINES=100
 MAX_LOG_LINES=100
+MAX_GUIDE_LINES=200
 MAX_GIT_LINES=20
 
 echo "## Context Auto-Restored"
@@ -44,7 +45,17 @@ else
     echo ""
 fi
 
-# 2. Read most recent daily log (handles work gaps - e.g., last worked Nov 29, returning Dec 26)
+# 2. Read development guide (architectural context - stable, doesn't grow with time)
+if [ -f "$PROJECT_DIR/docs/development_guide.md" ]; then
+    echo "---"
+    echo ""
+    echo "### Development Guide"
+    echo ""
+    head -n $MAX_GUIDE_LINES "$PROJECT_DIR/docs/development_guide.md"
+    echo ""
+fi
+
+# 3. Read most recent daily log (handles work gaps - e.g., last worked Nov 29, returning Dec 26)
 LOGS_DIR="$PROJECT_DIR/docs/logs"
 if [ -d "$LOGS_DIR" ]; then
     # Find most recent .md file (excluding archive directory)
@@ -65,7 +76,7 @@ if [ -d "$LOGS_DIR" ]; then
     fi
 fi
 
-# 3. Quick git status for code state awareness
+# 4. Quick git status for code state awareness
 echo "---"
 echo ""
 echo "### Git Status"
@@ -105,7 +116,7 @@ echo ""
 echo "---"
 echo ""
 
-# 4. Show current context usage (if we can get it)
+# 5. Show current context usage (if we can get it)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -x "$SCRIPT_DIR/estimate-tokens.sh" ]; then
     CONTEXT_STATUS=$("$SCRIPT_DIR/estimate-tokens.sh" 2>/dev/null || echo "")

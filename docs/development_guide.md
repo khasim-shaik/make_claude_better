@@ -1,12 +1,14 @@
 # Development Guide
 
-**Last Updated**: 2025-12-24
+**Last Updated**: 2025-12-26
 
 ## Project Overview
 
 **Name**: make_claude_better
 **Type**: Claude Code Automation System
-**Purpose**: Eliminate the 30-minute morning context reload problem through true automation
+**Purpose**: Prevent context loss and enable building large features within single sessions
+
+**Key Insight**: Claude Code's SessionStart hook stdout becomes context automatically. We use this to restore project state on every session start.
 
 ## Architecture
 
@@ -27,45 +29,55 @@
                     │ /restore       →  Force restore         │
                     │ /save-state    →  Force save to docs/   │
                     │ /context-status→  Check context usage   │
+                    │ /archive-week  →  Archive old weeks     │
                     └─────────────────────────────────────────┘
                                        │
                                        ▼
                     ┌─────────────────────────────────────────┐
                     │         STATE FILES (Persistence)       │
                     ├─────────────────────────────────────────┤
-                    │ docs/current_state.md  →  Project state │
-                    │ docs/development_guide.md  →  This file │
-                    │ docs/logs/YYYY-MM-DD.md  →  Daily logs  │
+                    │ implementation_tracker.md → Strategic   │
+                    │ implementation_archive.md → History     │
+                    │ development_guide.md      → This file   │
+                    │ logs/YYYY-MM-DD.md        → Daily logs  │
                     └─────────────────────────────────────────┘
 ```
+
+### The 2-File System (Plus Archive)
+
+| File | Audience | Auto-Loaded | Target Size |
+|------|----------|-------------|-------------|
+| `implementation_tracker.md` | Leadership | Yes | <100 lines |
+| `logs/YYYY-MM-DD.md` | Team Lead | Yes (most recent) | <100 lines |
+| `development_guide.md` | Developers | Yes | Stable |
+| `implementation_archive.md` | Reference | No | Unlimited |
 
 ### Directory Structure
 
 ```
 make_claude_better/
 ├── .claude/
-│   ├── commands/           # Slash commands (prompt injections)
+│   ├── commands/              # Slash commands
 │   │   ├── restore.md
 │   │   ├── save-state.md
-│   │   └── context-status.md
-│   ├── hooks/              # Shell scripts for TRUE automation
-│   │   ├── session-start.sh
-│   │   └── pre-compact.sh
-│   ├── settings.json       # Hook configuration
-│   └── settings.local.json # Permission overrides
+│   │   ├── context-status.md
+│   │   └── archive-week.md
+│   ├── hooks/                 # TRUE automation
+│   │   ├── session-start.sh   # Auto-restore on start
+│   │   ├── pre-compact.sh     # Backup before compact
+│   │   └── estimate-tokens.sh # Real token monitoring
+│   └── settings.json          # Hook configuration
 ├── docs/
-│   ├── current_state.md    # Primary state file
-│   ├── development_guide.md # This file
-│   └── logs/               # Daily session logs
-│       └── YYYY-MM-DD.md
-├── templates/              # Templates for new projects
-│   ├── current_state.template.md
-│   ├── session_state.template.md
-│   ├── daily_log.template.md
-│   └── development_guide.template.md
-├── install.sh              # One-command installation
-├── CLAUDE.md               # Claude's instructions
-└── README.md               # User documentation
+│   ├── implementation_tracker.md  # Strategic (<100 lines)
+│   ├── implementation_archive.md  # Historical (unlimited)
+│   ├── development_guide.md       # This file
+│   └── logs/
+│       ├── YYYY-MM-DD.md          # Most recent (auto-loaded)
+│       └── archive/               # Old logs
+├── templates/                 # For new projects
+├── install.sh                 # One-command install
+├── CLAUDE.md                  # Claude's instructions
+└── README.md                  # User documentation
 ```
 
 ## Tech Stack
@@ -73,7 +85,7 @@ make_claude_better/
 - **Hooks**: Bash scripts executed by Claude Code
 - **Config**: JSON settings files
 - **State**: Markdown documentation files
-- **Portability**: Bash install script
+- **Token Monitoring**: jq for parsing transcript JSONL
 
 ## How It Works
 
@@ -81,77 +93,55 @@ make_claude_better/
 
 When Claude Code starts, resumes, or recovers from compaction:
 
-1. `SessionStart` hook fires
+1. `SessionStart` hook fires automatically
 2. `.claude/hooks/session-start.sh` executes
-3. Script reads `docs/current_state.md`, today's log, git status
+3. Script reads: implementation_tracker, most recent log, development_guide, git status
 4. **Script's stdout is added as context to Claude**
-5. Claude instantly knows where you left off
+5. Claude instantly knows: project vision, architecture, where you left off
 
-This is TRUE automation - no manual `/restore` needed.
+**Token Budget**: ~5-6K tokens on start, leaving 194K+ for work.
 
 ### PreCompact Hook (Safety Net)
 
-When context is about to be compacted:
+Before context compaction:
+1. Backs up transcript to `docs/logs/`
+2. Logs the compaction event
+3. Output goes to stderr (not added as context)
 
-1. `PreCompact` hook fires
-2. `.claude/hooks/pre-compact.sh` executes
-3. Script backs up the transcript to `docs/logs/`
-4. Logs the compaction event
-5. Output goes to stderr (not added as context)
+### Token Monitoring
 
-### Manual Commands (Override)
-
-- `/restore` - Force re-read of docs/ (useful after manual edits)
-- `/save-state` - Force save current state (before risky changes)
-- `/context-status` - Check estimated context usage
+`estimate-tokens.sh` reads **real token usage** from Claude's transcript:
+```bash
+./.claude/hooks/estimate-tokens.sh
+# Output: ✅ Context: 54.3K / 200K tokens (~27%) - Status: good
+```
 
 ## Coding Conventions
 
 ### Shell Scripts
-
-```bash
-#!/bin/bash
-set -e  # Exit on error
-
-# Use environment variables with defaults
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-
-# Limit output to prevent context bloat
-head -n 100 file.md
-
-# Handle missing commands gracefully
-if command -v jq &> /dev/null; then
-    # Use jq
-else
-    # Fallback to grep
-fi
-```
+- Use `set -e` for exit on error
+- Use `${VAR:-default}` for environment variables
+- Limit output with `head -n` to prevent context bloat
+- Handle missing commands gracefully
 
 ### Markdown Files
-
-- Use consistent heading hierarchy (# > ## > ###)
+- Use consistent heading hierarchy
 - Include timestamps for updates
-- Use tables for structured data
-- Keep tactical context at top, strategic below
-- Include file paths with line numbers for navigation
+- Keep files under 100 lines when auto-loaded
+- Archive old content, don't delete
 
 ### Hook Configuration
-
 ```json
 {
   "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./.claude/hooks/session-start.sh",
-            "timeout": 15000
-          }
-        ]
-      }
-    ]
+    "SessionStart": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "./.claude/hooks/session-start.sh",
+        "timeout": 15000
+      }]
+    }]
   }
 }
 ```
@@ -159,59 +149,35 @@ fi
 ## Development Workflow
 
 ### Testing Hooks
-
 ```bash
 # Test session-start.sh
-CLAUDE_PROJECT_DIR=/path/to/project ./.claude/hooks/session-start.sh
+CLAUDE_PROJECT_DIR=$(pwd) ./.claude/hooks/session-start.sh
 
-# Test pre-compact.sh with mock input
-echo '{"transcript_path":"/tmp/test.jsonl","trigger":"manual"}' | \
-CLAUDE_PROJECT_DIR=/path/to/project ./.claude/hooks/pre-compact.sh
+# Test token estimation
+./.claude/hooks/estimate-tokens.sh --json
 ```
 
 ### Installing to Another Project
-
 ```bash
 ./install.sh /path/to/target/project
 ```
 
-### Updating State
-
-Claude follows CLAUDE.md rules to update state files:
-- At 85%+ context, auto-save to docs/
-- After completing tasks, log to daily log
-- Before session end, run /save-state
-
 ## Troubleshooting
 
 ### Hook Not Running
-
-**Issue**: SessionStart hook doesn't execute
-**Solution**:
 1. Check `.claude/settings.json` is valid JSON
-2. Verify hook file is executable: `chmod +x .claude/hooks/*.sh`
-3. Check hook path is correct (relative to project root)
+2. Verify scripts are executable: `chmod +x .claude/hooks/*.sh`
+3. Check path is relative to project root
 
 ### Context Not Restored
+1. Ensure `docs/implementation_tracker.md` exists
+2. Check hook outputs to stdout (not stderr)
+3. Run hook manually: `./.claude/hooks/session-start.sh`
 
-**Issue**: Session starts without restored context
-**Solution**:
-1. Ensure `docs/current_state.md` exists
-2. Check hook script outputs to stdout (not stderr)
-3. Run hook manually to test: `./.claude/hooks/session-start.sh`
-
-### Hook Timeout
-
-**Issue**: Hook takes too long (>15s default)
-**Solution**:
+### Hook Timeout (>15s)
 1. Limit file reads with `head -n 100`
-2. Avoid slow commands (network calls, large searches)
+2. Avoid slow commands (network, large searches)
 3. Increase timeout in settings.json if needed
-
-## Resources
-
-- [Claude Code Hooks Documentation](https://docs.anthropic.com/claude-code/hooks)
-- [Claude Code Slash Commands](https://docs.anthropic.com/claude-code/slash-commands)
 
 ---
 

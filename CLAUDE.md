@@ -17,11 +17,12 @@ This repository contains an automated context management system for Claude Code 
 
 ---
 
-## The 2-File System (Plus Archive)
+## The 3-File System (Plus Archive)
 
 | File | Audience | Auto-Loaded | Target Size |
 |------|----------|-------------|-------------|
 | `docs/implementation_tracker.md` | Engineering Leadership | Yes | <100 lines |
+| `docs/development_guide.md` | Developers | Yes | Stable (~200 lines) |
 | `docs/logs/YYYY-MM-DD.md` | Team Lead | Yes (most recent) | <100 lines |
 | `docs/implementation_archive.md` | Reference | No | Unlimited |
 
@@ -34,6 +35,16 @@ This repository contains an automated context management system for Claude Code 
 - Quick links to archive
 
 **Important**: Keep under 100 lines! Use `/archive-week` to move completed weeks to archive.
+
+### Development Guide (Architectural Context)
+- Project overview and purpose
+- Architecture diagram
+- Tech stack
+- Coding conventions
+- Directory structure
+- Troubleshooting guide
+
+**Note**: This file grows with complexity, not time. Update when architecture changes.
 
 ### Daily Log (Tactical)
 - Completed tasks with timestamps
@@ -79,12 +90,16 @@ This extracts real token counts from Claude's API responses - not rough estimate
 
 1. SessionStart hook fires automatically
 2. `.claude/hooks/session-start.sh` executes
-3. Script reads `docs/implementation_tracker.md`, today's log, git status
+3. Script reads:
+   - `docs/implementation_tracker.md` - Where the project is (strategic)
+   - `docs/development_guide.md` - How the project works (architectural)
+   - Most recent daily log - Where you left off (tactical)
+   - Git status and recent commits
 4. Script's stdout becomes Claude's initial context
-5. Claude immediately knows where you left off
+5. Claude immediately knows: project vision, architecture, and where you left off
 6. You say "let's continue" and you're productive in seconds
 
-**This eliminates the 30-minute morning context reload problem.**
+**This gives Claude a "developer's brain" - both understanding AND memory.**
 
 ---
 
@@ -141,10 +156,11 @@ After completing significant tasks, automatically:
 ## Session Start (AUTOMATIC via Hook)
 
 The SessionStart hook automatically runs `.claude/hooks/session-start.sh` which:
-1. Reads `docs/implementation_tracker.md` (slim, <100 lines)
-2. Reads the **most recent** daily log (handles work gaps gracefully)
-3. Shows `git status` and recent commits
-4. Shows current context usage
+1. Reads `docs/implementation_tracker.md` (slim, <100 lines) - Strategic context
+2. Reads `docs/development_guide.md` (~200 lines) - Architectural context
+3. Reads the **most recent** daily log (handles work gaps gracefully) - Tactical context
+4. Shows `git status` and recent commits
+5. Shows current context usage
 
 **You don't need to run /restore manually** - it happens automatically!
 
@@ -188,12 +204,12 @@ make_claude_better/
 │   │   └── estimate-tokens.sh # Real token usage from transcript
 │   └── settings.json          # Hook configuration
 ├── docs/                      # State files (the "hard drive")
-│   ├── implementation_tracker.md  # Strategic - KEEP SLIM (<100 lines)
+│   ├── implementation_tracker.md  # Strategic - AUTO-LOADED (<100 lines)
+│   ├── development_guide.md       # Architectural - AUTO-LOADED (~200 lines)
 │   ├── implementation_archive.md  # Historical - NOT auto-loaded
-│   ├── development_guide.md       # Architecture reference
-│   └── logs/                      # Daily logs (most recent only)
-│       ├── YYYY-MM-DD.md          # Most recent log (auto-loaded)
-│       └── archive/               # Old logs (NOT auto-loaded)
+│   └── logs/                      # Daily logs
+│       ├── YYYY-MM-DD.md          # Most recent - AUTO-LOADED
+│       └── archive/               # Old logs - NOT auto-loaded
 ├── templates/                 # Templates for new projects
 │   ├── implementation_tracker.template.md
 │   ├── implementation_archive.template.md
@@ -222,17 +238,18 @@ Save all context to structured files **before** compacting, enabling:
 | Method | Tokens to Restore | Quality |
 |--------|-------------------|---------|
 | Native auto-compact | 25-40K | Lossy |
-| This system | ~3-4K | Lossless |
+| This system | ~5-6K | Lossless + Understanding |
 
 **Context Budget on Session Start:**
-| Component | Target Tokens | Target Lines |
-|-----------|---------------|--------------|
-| Implementation Tracker | ~1500 | <100 |
-| Daily Log (most recent) | ~1500 | <100 |
-| Git Status | ~300 | ~20 |
-| **Total** | **~3400** | ~220 |
+| Component | Purpose | Target Tokens | Target Lines |
+|-----------|---------|---------------|--------------|
+| Implementation Tracker | Strategic (where project is) | ~1500 | <100 |
+| Development Guide | Architectural (how it works) | ~2500 | ~200 |
+| Daily Log (most recent) | Tactical (where you left off) | ~1500 | <100 |
+| Git Status | Code state | ~300 | ~20 |
+| **Total** | | **~5800** | ~420 |
 
-This leaves 196K+ tokens for actual work!
+This leaves 194K+ tokens for actual work - and Claude understands the project like a developer!
 
 ---
 
