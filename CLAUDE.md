@@ -12,8 +12,34 @@ This repository contains an automated context management system for Claude Code 
 **Or manual setup:**
 1. Copy `.claude/commands/` and `.claude/hooks/` to your project
 2. Copy `.claude/settings.json` to configure hooks
-3. Create `docs/current_state.md` from template
+3. Create `docs/implementation_tracker.md` from template
 4. Add the automation rules below to your project's `CLAUDE.md`
+
+---
+
+## The 2-File System
+
+| File | Audience | Purpose | Review Cadence |
+|------|----------|---------|----------------|
+| `docs/implementation_tracker.md` | Engineering Leadership | Strategic: weekly roadmap, decisions, blockers | Weekly |
+| `docs/logs/YYYY-MM-DD.md` | Team Lead | Tactical: daily tasks, code changes, session context | Daily |
+
+### Implementation Tracker (Strategic)
+- Weekly roadmap with planned deliverables
+- Previous weeks history (milestones hit)
+- Current week progress (completed/in-progress/blocked)
+- Next week preview
+- Key decisions log
+- Bugs fixed
+- Current blockers
+- Questions for leadership
+
+### Daily Log (Tactical)
+- Completed tasks with timestamps
+- Current task (file:line, approach, uncommitted changes)
+- Decisions made today
+- Next steps (immediate resume point)
+- Notes (scratchpad, edge cases, links)
 
 ---
 
@@ -46,7 +72,7 @@ This extracts real token counts from Claude's API responses - not rough estimate
 
 1. SessionStart hook fires automatically
 2. `.claude/hooks/session-start.sh` executes
-3. Script reads `docs/current_state.md`, today's log, git status
+3. Script reads `docs/implementation_tracker.md`, today's log, git status
 4. Script's stdout becomes Claude's initial context
 5. Claude immediately knows where you left off
 6. You say "let's continue" and you're productive in seconds
@@ -63,15 +89,12 @@ This extracts real token counts from Claude's API responses - not rough estimate
 ## Core Principle: Memory Hierarchy
 
 **Hard Drive** (Persistent Storage - Lossless):
+- `docs/implementation_tracker.md` - Strategic: roadmap, decisions, blockers
+- `docs/logs/YYYY-MM-DD.md` - Tactical: daily tasks, session context
 - `docs/development_guide.md` - Architecture, patterns, conventions
-- `docs/current_state.md` - Current focus, active tasks, decisions
-- `docs/logs/YYYY-MM-DD.md` - Daily session logs with detailed history
 
 **RAM** (Active Context - 200K tokens):
 - Claude Code's conversation context window
-
-**Cache** (Quick Access):
-- `.claude/session_state.md` - Immediate session context
 
 ---
 
@@ -83,26 +106,25 @@ This extracts real token counts from Claude's API responses - not rough estimate
 
 **85%+ (Critical - AUTO-SAVE)**:
 1. Alert: "Context at ~X% - Auto-saving state now..."
-2. Update `docs/current_state.md`
-3. Update `docs/logs/YYYY-MM-DD.md`
-4. Update `.claude/session_state.md`
-5. Compact to minimal context (~0-2K tokens)
-6. Continue working immediately
+2. Update `docs/implementation_tracker.md` (strategic updates)
+3. Update `docs/logs/YYYY-MM-DD.md` (tactical updates)
+4. Compact to minimal context (~0-2K tokens)
+5. Continue working immediately
 
 ---
 
 ## Auto-Logging After Task Completion
 
 After completing significant tasks, automatically:
-1. Move task from "Active" to "Recent Completions" in current_state.md
-2. Append entry to docs/logs/YYYY-MM-DD.md
+1. Update current week progress in implementation_tracker.md
+2. Add entry to docs/logs/YYYY-MM-DD.md with timestamp
 3. Brief confirmation: "Task completed. (Auto-logged)"
 
 ---
 
 ## Slash Commands
 
-- `/restore` - Restore full context from documentation (~5-7K tokens)
+- `/restore` - Restore full context from documentation (~4-6K tokens)
 - `/save-state` - Manually save current state
 - `/context-status` - Check current context usage
 
@@ -111,10 +133,10 @@ After completing significant tasks, automatically:
 ## Session Start (AUTOMATIC via Hook)
 
 The SessionStart hook automatically runs `.claude/hooks/session-start.sh` which:
-1. Reads `docs/current_state.md`
+1. Reads `docs/implementation_tracker.md`
 2. Reads `docs/logs/YYYY-MM-DD.md` for today (if exists)
-3. Reads `.claude/session_state.md` (if exists)
-4. Shows `git status` and recent commits
+3. Shows `git status` and recent commits
+4. Shows current context usage
 
 **You don't need to run /restore manually** - it happens automatically!
 
@@ -136,6 +158,7 @@ Use `/restore` only if you need to force a re-read after manually editing docs/.
 ```
 
 **At 85%+**: Claude should auto-save state before native auto-compact triggers.
+```
 
 ---
 
@@ -154,13 +177,12 @@ make_claude_better/
 │   │   └── estimate-tokens.sh # Real token usage from transcript
 │   └── settings.json          # Hook configuration
 ├── docs/                      # State files (the "hard drive")
-│   ├── current_state.md       # Project state (tactical + strategic)
-│   ├── development_guide.md   # Architecture reference
-│   └── logs/                  # Daily session logs
+│   ├── implementation_tracker.md  # Strategic (leadership review)
+│   ├── development_guide.md       # Architecture reference
+│   └── logs/                      # Daily logs (team lead review)
 │       └── YYYY-MM-DD.md
 ├── templates/                 # Templates for new projects
-│   ├── current_state.template.md
-│   ├── session_state.template.md
+│   ├── implementation_tracker.template.md
 │   ├── daily_log.template.md
 │   └── development_guide.template.md
 ├── install.sh                 # One-command installation
@@ -179,14 +201,14 @@ Claude Code has a ~200K token context window. When it fills up, native auto-comp
 Save all context to structured files **before** compacting, enabling:
 - **Lossless preservation**: Everything saved to docs
 - **Aggressive compacting**: Safe because docs have full context
-- **Efficient restoration**: ~5-7K tokens vs 25-40K from native compact
+- **Efficient restoration**: ~4-6K tokens vs 25-40K from native compact
 
 ### Token Efficiency
 
 | Method | Tokens to Restore | Quality |
 |--------|-------------------|---------|
 | Native auto-compact | 25-40K | Lossy |
-| This system | 5-7K | Lossless |
+| This system | 4-6K | Lossless |
 
 ---
 
@@ -195,5 +217,7 @@ Save all context to structured files **before** compacting, enabling:
 The system is working when:
 - You never hit native auto-compact (always save at 85% first)
 - Sessions can build large features without context loss
-- `/restore` brings back full context in ~5-7K tokens
+- `/restore` brings back full context in ~4-6K tokens
 - User never has to re-explain context after restart
+- Leadership can read implementation_tracker.md for weekly status
+- Team leads can read daily logs for daily updates

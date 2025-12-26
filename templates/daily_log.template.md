@@ -1,4 +1,4 @@
-# Session Log - YYYY-MM-DD
+# Daily Log: YYYY-MM-DD
 
 **Project**: [Project Name]
 
@@ -13,8 +13,7 @@
 
 ## Completed Tasks
 
-### [Task Name]
-**Time**: HH:MM
+### [HH:MM] [Task Name]
 **Files**: `path/to/file.ts`
 
 **Details**:
@@ -22,24 +21,28 @@
 - [Key approach or pattern used]
 
 **Code Changes**:
-- `file/path.ts:lines` - [Description]
-
----
-
-## Decisions Made
-
-| Decision | Rationale | Impact |
-|----------|-----------|--------|
-| [Decision] | [Why] | [Effect] |
+- `file/path.ts:line-range` - [Description]
 
 ---
 
 ## Current Task
 
-**[Task Name]**
-
+**Working On**: [Specific task being worked on]
 **Status**: In Progress
-**Next File**: `path/to/file.ts`
+
+**Files Being Modified**:
+- `src/file.ts` (lines 140-180)
+- `src/other.ts` (reviewing)
+
+**Approach/Thinking**:
+[Current thought process, approach being taken, reasoning for decisions]
+
+**Uncommitted Changes**:
+- [Change 1 - what was modified]
+- [Change 2 - what was added]
+
+**Next Immediate Action**:
+[Exactly what to do next - be specific]
 
 **Progress**:
 - [x] [Completed subtask]
@@ -47,24 +50,46 @@
 
 ---
 
+## Decisions Made Today
+
+| Decision | Rationale | Impact |
+|----------|-----------|--------|
+| [Decision] | [Why] | [Effect] |
+
+---
+
 ## Next Steps
 
-### Immediate (This Session)
-1. [Task 1]
-2. [Task 2]
+### Immediate (Resume Here)
+1. [Very next action to take]
+2. [Following action]
 
 ### Tomorrow
-1. [Task 1]
+1. [Planned item]
 
 ---
 
 ## Notes
 
-- [Any observations, learnings, or reminders]
+**Scratchpad**:
+- [Temporary notes and thoughts]
+- [Things to remember]
+
+**Edge Cases to Handle**:
+- [Edge case 1]
+- [Edge case 2]
+
+**Resource Links**:
+- [Link to documentation]
+- [Link to reference]
+
+**Questions/Open Items**:
+- [Question needing answer]
+- [Item to investigate]
 
 ---
 
 ## Context Status
 
-**Estimated Usage**: ~X%
+**Tokens**: ~X% used
 **Last Save**: HH:MM

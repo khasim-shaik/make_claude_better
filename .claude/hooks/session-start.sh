@@ -23,23 +23,23 @@ echo "**Project**: $(basename "$PROJECT_DIR")"
 echo "**Date**: $DATE"
 echo ""
 
-# 1. Read current state (primary context - tactical + strategic)
-if [ -f "$PROJECT_DIR/docs/current_state.md" ]; then
+# 1. Read implementation tracker (strategic context for leadership)
+if [ -f "$PROJECT_DIR/docs/implementation_tracker.md" ]; then
     echo "---"
     echo ""
-    echo "### Current State"
+    echo "### Implementation Tracker"
     echo ""
-    head -n $MAX_STATE_LINES "$PROJECT_DIR/docs/current_state.md"
+    head -n $MAX_STATE_LINES "$PROJECT_DIR/docs/implementation_tracker.md"
 
     # Check if file was truncated
-    TOTAL_LINES=$(wc -l < "$PROJECT_DIR/docs/current_state.md" | tr -d ' ')
+    TOTAL_LINES=$(wc -l < "$PROJECT_DIR/docs/implementation_tracker.md" | tr -d ' ')
     if [ "$TOTAL_LINES" -gt "$MAX_STATE_LINES" ]; then
         echo ""
-        echo "*[Truncated - full state in docs/current_state.md]*"
+        echo "*[Truncated - full tracker in docs/implementation_tracker.md]*"
     fi
     echo ""
 else
-    echo "**Warning**: docs/current_state.md not found. Run /save-state to create it."
+    echo "**Warning**: docs/implementation_tracker.md not found. Run /save-state to create it."
     echo ""
 fi
 
@@ -53,17 +53,7 @@ if [ -f "$PROJECT_DIR/docs/logs/$DATE.md" ]; then
     echo ""
 fi
 
-# 3. Read session state for immediate context (if exists)
-if [ -f "$PROJECT_DIR/.claude/session_state.md" ]; then
-    echo "---"
-    echo ""
-    echo "### Immediate Context (Last Session)"
-    echo ""
-    cat "$PROJECT_DIR/.claude/session_state.md"
-    echo ""
-fi
-
-# 4. Quick git status for code state awareness
+# 3. Quick git status for code state awareness
 echo "---"
 echo ""
 echo "### Git Status"
@@ -103,7 +93,7 @@ echo ""
 echo "---"
 echo ""
 
-# 5. Show current context usage (if we can get it)
+# 4. Show current context usage (if we can get it)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -x "$SCRIPT_DIR/estimate-tokens.sh" ]; then
     CONTEXT_STATUS=$("$SCRIPT_DIR/estimate-tokens.sh" 2>/dev/null || echo "")
