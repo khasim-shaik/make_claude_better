@@ -28,6 +28,20 @@ This system uses Claude Code's **hooks** for TRUE automation:
 
 **SessionStart** is the key innovation - when you start Claude Code, the hook automatically reads your state files and adds them as context. No manual `/restore` needed!
 
+### Real Token Monitoring
+
+The system includes `estimate-tokens.sh` which reads **actual token usage** from Claude's transcript:
+
+```bash
+./.claude/hooks/estimate-tokens.sh
+# Output: ✅ Context: 54.3K / 200K tokens (~27%) - Status: good
+
+./.claude/hooks/estimate-tokens.sh --json
+# Output: {"current_context": 54364, "percentage": 27, "status": "good", ...}
+```
+
+This extracts real token counts from Claude's API responses - not rough estimates!
+
 ### What Happens When You Start Claude Code
 
 1. SessionStart hook fires automatically
@@ -108,14 +122,20 @@ Use `/restore` only if you need to force a re-read after manually editing docs/.
 
 ---
 
-## Proactive Context Reporting
+## Proactive Context Monitoring
 
-Every 20-30 interactions (if >50%):
+**On session start**: The SessionStart hook shows current context usage automatically.
+
+**Periodic checks**: Run `/context-status` every 20-30 interactions to check real token usage.
+
+**When context >70%**: Claude should proactively check and report:
 ```
 [Response]
-(Context: ~X% - [Healthy/Monitor/Critical])
+
+(Context: ~X% - run /save-state if needed)
 ```
-```
+
+**At 85%+**: Claude should auto-save state before native auto-compact triggers.
 
 ---
 
@@ -130,7 +150,8 @@ make_claude_better/
 │   │   └── context-status.md
 │   ├── hooks/                 # TRUE AUTOMATION
 │   │   ├── session-start.sh   # Auto-restore on session start
-│   │   └── pre-compact.sh     # Auto-backup before compaction
+│   │   ├── pre-compact.sh     # Auto-backup before compaction
+│   │   └── estimate-tokens.sh # Real token usage from transcript
 │   └── settings.json          # Hook configuration
 ├── docs/                      # State files (the "hard drive")
 │   ├── current_state.md       # Project state (tactical + strategic)

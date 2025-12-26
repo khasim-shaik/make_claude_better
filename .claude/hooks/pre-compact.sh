@@ -59,10 +59,29 @@ else
     echo "[$TIMESTAMP] No transcript to backup" >> "$LOGS_DIR/compaction.log"
 fi
 
-# Reminder message (goes to stderr, visible in verbose mode)
+# Get context usage if we can
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -x "$SCRIPT_DIR/estimate-tokens.sh" ]; then
+    CONTEXT_INFO=$("$SCRIPT_DIR/estimate-tokens.sh" 2>/dev/null || echo "")
+    if [ -n "$CONTEXT_INFO" ]; then
+        echo "[$TIMESTAMP] Context at compaction: $CONTEXT_INFO" >> "$LOGS_DIR/compaction.log"
+    fi
+fi
+
+# Different messages for auto vs manual compact
 echo "" >&2
-echo "PreCompact hook executed." >&2
-echo "Reminder: Ensure state is saved in docs/ before compaction." >&2
-echo "Use /save-state if you haven't already." >&2
+if [ "$TRIGGER" = "auto" ]; then
+    echo "🚨 AUTO-COMPACTION TRIGGERED - Context window was full!" >&2
+    echo "" >&2
+    echo "This means context reached ~90% and Claude Code initiated compaction." >&2
+    echo "The transcript has been backed up. After compaction:" >&2
+    echo "  1. Context will be reduced to ~2-4K tokens" >&2
+    echo "  2. Full history is preserved in docs/ (if you ran /save-state)" >&2
+    echo "  3. Use /restore to reload context from docs/" >&2
+else
+    echo "PreCompact hook executed (manual compaction)." >&2
+    echo "Reminder: Ensure state is saved in docs/ before compaction." >&2
+    echo "Use /save-state if you haven't already." >&2
+fi
 
 exit 0

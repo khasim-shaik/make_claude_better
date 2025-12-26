@@ -102,6 +102,21 @@ fi
 echo ""
 echo "---"
 echo ""
+
+# 5. Show current context usage (if we can get it)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -x "$SCRIPT_DIR/estimate-tokens.sh" ]; then
+    CONTEXT_STATUS=$("$SCRIPT_DIR/estimate-tokens.sh" 2>/dev/null || echo "")
+    if [ -n "$CONTEXT_STATUS" ]; then
+        echo "### Context Status"
+        echo ""
+        echo "$CONTEXT_STATUS"
+        echo ""
+        echo "---"
+        echo ""
+    fi
+fi
+
 echo "**Context auto-restored from docs/.** Ready to continue where you left off."
 echo ""
 echo "*Tip: Use /save-state before ending your session to preserve context.*"
