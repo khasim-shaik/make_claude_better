@@ -1,91 +1,120 @@
 # Make Claude Better
 
-An automated context management system for Claude Code that prevents context loss and enables building large features within single sessions.
+An automated context management system for Claude Code that **eliminates the 30-minute morning context reload problem**.
 
 ## The Problem
 
-Claude Code has a ~200K token context window. During long development sessions:
-- Context fills up with file reads, code generation, and conversation
-- Native auto-compact triggers at ~90% and **loses important details**
-- You have to re-explain context, losing productivity
-- Large features become impossible to build in one session
+Every morning you start Claude Code:
+- Claude has no idea what you were working on yesterday
+- You spend 30 minutes explaining context, decisions, and progress
+- Large features become impossible to build across sessions
+- Native auto-compact at ~90% loses important details
 
 ## The Solution
 
-This system treats Claude Code's context like computer memory:
+This system uses **Claude Code hooks** for TRUE automation:
 
-| Layer | Analogy | Purpose |
-|-------|---------|---------|
-| `docs/` files | Hard Drive | Persistent, lossless storage |
-| Context window | RAM | Active working memory (200K tokens) |
-| `session_state.md` | Cache | Quick access to immediate context |
+| Hook | When It Fires | What It Does |
+|------|---------------|--------------|
+| `SessionStart` | Session begins/resumes | Auto-reads docs/ and injects as context |
+| `PreCompact` | Before compaction | Auto-backs up transcript |
 
-**Key Innovation**: Auto-save at 85% context → compact aggressively → restore losslessly from docs
+**Key Innovation**: SessionStart hook outputs stdout as Claude context. When you start Claude Code, it automatically reads your state files and knows exactly where you left off.
+
+### Before vs After
+
+**Before (30 minutes):**
+```
+Developer: *opens Claude Code*
+Claude: "Hello! How can I help?"
+Developer: "So yesterday I was working on the auth system..."
+         *explains for 30 minutes*
+```
+
+**After (30 seconds):**
+```
+Developer: *opens Claude Code*
+Claude: "Context restored. You were implementing the refresh token
+        endpoint in src/routes/auth.ts:140. The Redis blacklist
+        logic is next. Ready to continue?"
+Developer: "Let's continue."
+```
 
 ## Installation
 
-### 1. Copy Commands to Your Project
+### One-Command Install (Recommended)
 
 ```bash
-# From your project root
-mkdir -p .claude/commands
-cp /path/to/make_claude_better/.claude/commands/*.md .claude/commands/
+./install.sh /path/to/your/project
 ```
 
-### 2. Set Up Documentation Structure
+### Manual Install
 
 ```bash
-mkdir -p docs/logs
+# 1. Copy commands and hooks
+mkdir -p .claude/commands .claude/hooks
+cp /path/to/make_claude_better/.claude/commands/*.md .claude/commands/
+cp /path/to/make_claude_better/.claude/hooks/*.sh .claude/hooks/
+chmod +x .claude/hooks/*.sh
 
-# Copy and customize templates
+# 2. Copy settings
+cp /path/to/make_claude_better/.claude/settings.json .claude/
+
+# 3. Create state files
+mkdir -p docs/logs
 cp /path/to/make_claude_better/templates/current_state.template.md docs/current_state.md
 cp /path/to/make_claude_better/templates/development_guide.template.md docs/development_guide.md
+
+# 4. Add automation rules to your CLAUDE.md
 ```
-
-### 3. Add Automation Rules to Your CLAUDE.md
-
-Copy the automation rules from `CLAUDE.md` in this repo to your project's `CLAUDE.md`.
 
 ## Usage
 
-### Starting a Session
+### Starting a Session (AUTOMATIC)
 
-```
-/restore
-```
+Just start Claude Code. The SessionStart hook automatically:
+1. Reads `docs/current_state.md`
+2. Reads today's log (if exists)
+3. Shows git status
+4. Injects all this as Claude's initial context
 
-This loads context from your docs (~5-7K tokens) and gives you a summary of:
-- Current task and progress
-- Recent completions
-- Key decisions
-- Next steps
+**You don't need to do anything** - context is restored automatically!
 
 ### During Development
 
-Just work normally. The system:
-- **Monitors context** continuously
-- **Auto-saves at 85%** without interrupting you
-- **Auto-logs completed tasks** to daily logs
-- **Reports context status** every 20-30 interactions
+Work normally. Follow CLAUDE.md rules to:
+- Update `docs/current_state.md` when completing tasks
+- Run `/save-state` before ending your session
+- Save state when context reaches ~85%
 
-### Manual Commands
+### Manual Commands (Override)
 
 | Command | Purpose |
 |---------|---------|
-| `/restore` | Load context from docs |
-| `/save-state` | Force save before auto-save |
-| `/context-status` | Check current context usage |
+| `/restore` | Force re-read docs/ (after manual edits) |
+| `/save-state` | Save current state to docs/ |
+| `/context-status` | Check estimated context usage |
 
-## How Auto-Save Works
+## How the Hooks Work
 
-When context reaches 85%:
+### SessionStart Hook (Auto-Restore)
 
-1. **Alert**: "Context at ~87% - Auto-saving state now..."
-2. **Save**: Updates all three doc files
-3. **Compact**: Reduces to ~0-2K tokens
-4. **Continue**: Resumes work immediately
+When Claude Code starts:
+1. Hook fires automatically
+2. `.claude/hooks/session-start.sh` executes
+3. Script reads state files and outputs markdown
+4. **Output becomes Claude's initial context**
+5. Claude immediately knows where you left off
 
-You don't have to do anything - it's fully automatic.
+### PreCompact Hook (Safety Net)
+
+When context is about to compact:
+1. Hook fires automatically
+2. `.claude/hooks/pre-compact.sh` executes
+3. Script backs up transcript to `docs/logs/`
+4. Logs the compaction event
+
+This provides a safety net in case you forgot to save state.
 
 ## File Structure
 
@@ -94,14 +123,18 @@ After setup, your project will have:
 ```
 your-project/
 ├── .claude/
-│   ├── commands/
-│   │   ├── restore.md         # Context restoration
-│   │   ├── save-state.md      # State preservation
-│   │   └── context-status.md  # Context monitoring
-│   └── session_state.md       # Immediate context (auto-generated)
+│   ├── commands/              # Slash commands (manual override)
+│   │   ├── restore.md
+│   │   ├── save-state.md
+│   │   └── context-status.md
+│   ├── hooks/                 # TRUE AUTOMATION
+│   │   ├── session-start.sh   # Auto-restore on session start
+│   │   └── pre-compact.sh     # Auto-backup before compaction
+│   ├── settings.json          # Hook configuration
+│   └── session_state.md       # Immediate context cache
 ├── docs/
-│   ├── development_guide.md   # Architecture & conventions
-│   ├── current_state.md       # Current focus & tasks
+│   ├── current_state.md       # Project state (tactical + strategic)
+│   ├── development_guide.md   # Architecture reference
 │   └── logs/
 │       └── YYYY-MM-DD.md      # Daily session logs
 └── CLAUDE.md                  # Automation rules
@@ -166,19 +199,36 @@ Immediate context cache (auto-updated):
 
 ## Troubleshooting
 
+### "Hook not running"
+- Check `.claude/settings.json` is valid JSON
+- Verify hook file is executable: `chmod +x .claude/hooks/*.sh`
+- Test manually: `CLAUDE_PROJECT_DIR=. ./.claude/hooks/session-start.sh`
+
+### "Context not restored on session start"
+- Ensure `docs/current_state.md` exists and has content
+- Check hook outputs to stdout (not stderr)
+- Verify hook path in settings.json is correct
+
 ### "Context restored but missing details"
 - Check if `docs/logs/YYYY-MM-DD.md` exists for today
 - Run `/save-state` more frequently if needed
-
-### "Auto-save didn't trigger"
-- Context estimation is approximate
-- Use `/context-status` to check manually
-- Run `/save-state` if concerned
+- Ensure you're updating current_state.md before ending sessions
 
 ### "Files not found during restore"
 - Ensure `docs/` structure exists
 - Check file paths match your project layout
 - Create missing files from templates
+
+### Testing Hooks Manually
+
+```bash
+# Test session-start.sh
+CLAUDE_PROJECT_DIR=/path/to/project ./.claude/hooks/session-start.sh
+
+# Test pre-compact.sh
+echo '{"transcript_path":"/tmp/test.jsonl","trigger":"manual"}' | \
+  CLAUDE_PROJECT_DIR=/path/to/project ./.claude/hooks/pre-compact.sh
+```
 
 ## Contributing
 

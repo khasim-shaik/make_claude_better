@@ -4,9 +4,40 @@ This repository contains an automated context management system for Claude Code 
 
 ## Quick Start
 
-1. Copy the `.claude/commands/` folder to your project
-2. Copy the `templates/` contents to your `docs/` folder (rename `.template.md` to `.md`)
-3. Copy the automation rules below to your project's `CLAUDE.md`
+**One-command installation:**
+```bash
+./install.sh /path/to/your/project
+```
+
+**Or manual setup:**
+1. Copy `.claude/commands/` and `.claude/hooks/` to your project
+2. Copy `.claude/settings.json` to configure hooks
+3. Create `docs/current_state.md` from template
+4. Add the automation rules below to your project's `CLAUDE.md`
+
+---
+
+## How Automation Works (Hooks)
+
+This system uses Claude Code's **hooks** for TRUE automation:
+
+| Hook | Event | Action |
+|------|-------|--------|
+| `SessionStart` | Session begins/resumes | Auto-reads docs/ and injects as context |
+| `PreCompact` | Before compaction | Auto-backs up transcript |
+
+**SessionStart** is the key innovation - when you start Claude Code, the hook automatically reads your state files and adds them as context. No manual `/restore` needed!
+
+### What Happens When You Start Claude Code
+
+1. SessionStart hook fires automatically
+2. `.claude/hooks/session-start.sh` executes
+3. Script reads `docs/current_state.md`, today's log, git status
+4. Script's stdout becomes Claude's initial context
+5. Claude immediately knows where you left off
+6. You say "let's continue" and you're productive in seconds
+
+**This eliminates the 30-minute morning context reload problem.**
 
 ---
 
@@ -63,12 +94,17 @@ After completing significant tasks, automatically:
 
 ---
 
-## Session Start: Use `/restore`
+## Session Start (AUTOMATIC via Hook)
 
-1. Read `docs/current_state.md`
-2. Read `docs/logs/YYYY-MM-DD.md` for today
-3. Skim `docs/development_guide.md`
-4. Run `git log --oneline -10` and `git status`
+The SessionStart hook automatically runs `.claude/hooks/session-start.sh` which:
+1. Reads `docs/current_state.md`
+2. Reads `docs/logs/YYYY-MM-DD.md` for today (if exists)
+3. Reads `.claude/session_state.md` (if exists)
+4. Shows `git status` and recent commits
+
+**You don't need to run /restore manually** - it happens automatically!
+
+Use `/restore` only if you need to force a re-read after manually editing docs/.
 
 ---
 
@@ -88,15 +124,25 @@ Every 20-30 interactions (if >50%):
 ```
 make_claude_better/
 ├── .claude/
-│   └── commands/
-│       ├── restore.md         # Context restoration protocol
-│       ├── save-state.md      # State preservation workflow
-│       └── context-status.md  # Context monitoring
-├── templates/
-│   ├── current_state.template.md    # Project state tracker
-│   ├── session_state.template.md    # Immediate context cache
-│   ├── daily_log.template.md        # Daily session log format
-│   └── development_guide.template.md # Architecture documentation
+│   ├── commands/              # Slash commands (manual override)
+│   │   ├── restore.md
+│   │   ├── save-state.md
+│   │   └── context-status.md
+│   ├── hooks/                 # TRUE AUTOMATION
+│   │   ├── session-start.sh   # Auto-restore on session start
+│   │   └── pre-compact.sh     # Auto-backup before compaction
+│   └── settings.json          # Hook configuration
+├── docs/                      # State files (the "hard drive")
+│   ├── current_state.md       # Project state (tactical + strategic)
+│   ├── development_guide.md   # Architecture reference
+│   └── logs/                  # Daily session logs
+│       └── YYYY-MM-DD.md
+├── templates/                 # Templates for new projects
+│   ├── current_state.template.md
+│   ├── session_state.template.md
+│   ├── daily_log.template.md
+│   └── development_guide.template.md
+├── install.sh                 # One-command installation
 ├── CLAUDE.md                  # This file
 └── README.md                  # Full documentation
 ```
