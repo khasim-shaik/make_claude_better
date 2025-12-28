@@ -2,6 +2,20 @@
 
 **Last Updated**: YYYY-MM-DD
 
+> **SIZE LIMIT: Keep under 200 lines (~5-6K tokens)**
+>
+> This file is auto-loaded on every session start. Large files waste context.
+>
+> **KEEP here**: Architecture, tech stack, directory structure, key patterns, quick start
+>
+> **EXTRACT to separate files** (not auto-loaded):
+> - `CHANGELOG.md` - Version history, release notes
+> - `docs/detailed/` - Full API docs, tutorials, implementation details
+> - `docs/troubleshooting.md` - Extensive troubleshooting guides
+>
+> **When this file exceeds 200 lines**: Ask Claude to slim it down by extracting
+> verbose sections to separate files. Only essential architectural context belongs here.
+
 ## Project Overview
 
 **Name**: [Project Name]

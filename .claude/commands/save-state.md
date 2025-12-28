@@ -2,8 +2,9 @@
 
 **Purpose**: Preserve current development context to documentation files for later restoration.
 
-This command saves to **2 files** with distinct audiences:
-- `docs/implementation_tracker.md` - Strategic (for engineering leadership) - **KEEP SLIM**
+This command saves to **3 files** with distinct audiences:
+- `docs/implementation_tracker.md` - Strategic (for engineering leadership) - **KEEP <100 LINES**
+- `docs/development_guide.md` - Architectural (for developers) - **KEEP <200 LINES**
 - `docs/logs/YYYY-MM-DD.md` - Tactical (for team lead daily review)
 
 ---
@@ -145,7 +146,84 @@ This file is NOT auto-loaded, so it can grow without affecting context.
 
 ---
 
-### 5. Size Check
+### 4.5. Update Development Guide (If Architectural Changes)
+**File**: `docs/development_guide.md`
+
+**Review the session and update the guide if ANY of these occurred:**
+
+| Change Type | What to Update |
+|-------------|----------------|
+| New dependency/library added | Tech Stack section |
+| New API endpoint created | Key Patterns → API Routes |
+| Database table added/modified | Key Patterns → Database Tables |
+| New environment variable | Environment Variables section |
+| Authentication flow changed | Key Patterns → Authentication |
+| New coding pattern established | Key Patterns section |
+| Directory structure changed | Directory Structure section |
+| Deployment process changed | Deployment section |
+| New external service integrated | Tech Stack + Architecture |
+
+**How to Update:**
+
+1. **Read the current guide first**:
+   ```bash
+   cat docs/development_guide.md
+   ```
+
+2. **Update existing sections** (don't just append):
+   - Find the relevant section
+   - Modify/add content in place
+   - Keep entries concise (1-2 lines each)
+
+3. **Add new sections only if needed** (rare)
+
+4. **Update the "Last Updated" date** at the top
+
+**What to Write (Concise Essentials Only):**
+
+```markdown
+# GOOD - Concise, scannable
+| `STRIPE_SECRET_KEY` | Payment processing |
+
+# BAD - Too verbose
+| `STRIPE_SECRET_KEY` | This is the secret key for Stripe payment
+processing. You can get it from the Stripe dashboard under
+Developers > API Keys. Make sure to use the test key for development. |
+```
+
+```markdown
+# GOOD - Brief pattern
+### Authentication
+- Firebase Auth handles Google OAuth in browser
+- JWT token verified on backend via Firebase public keys
+
+# BAD - Tutorial-style
+### Authentication
+First, the user clicks the login button. This triggers Firebase Auth
+which opens a popup for Google OAuth. The user selects their Google
+account and authorizes the app. Firebase then returns a JWT token...
+```
+
+**What Does NOT Go in Development Guide:**
+- Bug fixes (unless they reveal a new pattern)
+- Progress updates (→ tracker)
+- Task details (→ daily log)
+- Decision rationale (→ archive)
+- Version history (→ CHANGELOG.md)
+- Full API documentation (→ docs/detailed/)
+
+**Example Session Changes → Guide Updates:**
+
+| What You Did | Guide Update |
+|--------------|--------------|
+| Added Stripe payments | Tech Stack: add `Stripe (Hosted Checkout)` |
+| Created `/api/webhooks/stripe` | Key Patterns → API Routes: add row |
+| Added `STRIPE_SECRET_KEY` | Environment Variables: add row |
+| Changed auth to use sessions | Key Patterns → Authentication: modify |
+
+---
+
+### 5. Implementation Tracker Size Check
 **Run**:
 ```bash
 wc -l docs/implementation_tracker.md
@@ -156,6 +234,62 @@ wc -l docs/implementation_tracker.md
 ⚠️ Implementation tracker is X lines (target: <100).
 Consider running /archive-week to move completed weeks to archive.
 ```
+
+---
+
+### 5.5. Development Guide Size Check
+**Run**:
+```bash
+wc -l docs/development_guide.md
+```
+
+**If over 200 lines**, auto-trim:
+
+1. **Create detailed directory if needed**:
+   ```bash
+   mkdir -p docs/detailed
+   ```
+
+2. **Identify sections to extract** (move verbose content):
+   - Changelog / version history sections
+   - Detailed API documentation
+   - Full database schema details
+   - Extended troubleshooting guides
+   - Feature deep-dives and tutorials
+
+3. **Append extracted content to full guide**:
+   - Read `docs/detailed/full_development_guide.md` (create if missing)
+   - Add timestamp header: `## Extracted on YYYY-MM-DD`
+   - Append extracted sections below the header
+
+4. **Remove extracted sections from main guide**
+
+5. **Verify main guide is now ≤200 lines**
+
+6. **Report**:
+   ```
+   ✂️ Development guide trimmed: X → Y lines
+   Extracted sections moved to: docs/detailed/full_development_guide.md
+   ```
+
+**What to KEEP in main guide** (essential architectural context):
+- Project overview (name, version, business model)
+- Tech stack table
+- Architecture diagram
+- Directory structure
+- Key patterns (auth, API routes, database tables)
+- Quick start commands
+- Deployment commands
+- Environment variables summary
+- Brief troubleshooting (1-liners only)
+
+**What to EXTRACT** (detailed reference, not needed on session start):
+- Changelogs, version history, release notes
+- Full API endpoint documentation
+- Complete database schema with field descriptions
+- Extended troubleshooting with examples
+- Feature implementation details
+- Tutorials and walkthroughs
 
 ---
 
@@ -181,12 +315,13 @@ Include result in daily log's "Context Status" section.
 
 ## Output Format
 
-### Success Message
+### Success Message (No Architectural Changes)
 ```markdown
 **Session State Saved**
 
 **Updated Files**:
 - docs/implementation_tracker.md (X lines)
+- docs/development_guide.md (Y lines) - no changes
 - docs/logs/YYYY-MM-DD.md
 
 **Summary**:
@@ -198,12 +333,34 @@ Include result in daily log's "Context Status" section.
 Context preserved. Use `/restore` to reload anytime.
 ```
 
-### With Size Warning
+### With Development Guide Updates
 ```markdown
 **Session State Saved**
 
 **Updated Files**:
-- docs/implementation_tracker.md (125 lines)
+- docs/implementation_tracker.md (85 lines)
+- docs/development_guide.md (192 lines) 📝 updated
+- docs/logs/YYYY-MM-DD.md
+
+**Development Guide Updates**:
+- Tech Stack: Added Redis for caching
+- Environment Variables: Added REDIS_URL
+- Key Patterns: Added caching pattern
+
+**Summary**:
+- [X] tasks completed
+- [Y] files modified
+
+**Context Status**: ~X% ([status])
+```
+
+### With Size Warning (Tracker)
+```markdown
+**Session State Saved**
+
+**Updated Files**:
+- docs/implementation_tracker.md (125 lines) ⚠️
+- docs/development_guide.md (180 lines)
 - docs/logs/YYYY-MM-DD.md
 
 **Summary**:
@@ -211,7 +368,26 @@ Context preserved. Use `/restore` to reload anytime.
 
 **Context Status**: ~X%
 
-Implementation tracker is over 100 lines. Run `/archive-week` to keep it slim.
+⚠️ Implementation tracker is over 100 lines. Run `/archive-week` to keep it slim.
+```
+
+### With Auto-Trim (Development Guide)
+```markdown
+**Session State Saved**
+
+**Updated Files**:
+- docs/implementation_tracker.md (85 lines)
+- docs/development_guide.md (195 lines) ✂️ trimmed from 450
+- docs/logs/YYYY-MM-DD.md
+
+**Summary**:
+- [X] tasks completed
+- [Y] files modified
+
+**Context Status**: ~X%
+
+✂️ Development guide auto-trimmed. Extracted sections moved to:
+   docs/detailed/full_development_guide.md
 ```
 
 ---
@@ -221,8 +397,10 @@ Implementation tracker is over 100 lines. Run `/archive-week` to keep it slim.
 | File | Audience | Auto-Loaded | Target Size |
 |------|----------|-------------|-------------|
 | `implementation_tracker.md` | Leadership | Yes | <100 lines |
-| `implementation_archive.md` | Reference | No | Unlimited |
+| `development_guide.md` | Developers | Yes | <200 lines |
 | `docs/logs/YYYY-MM-DD.md` | Team Lead | Yes (most recent) | <100 lines |
+| `implementation_archive.md` | Reference | No | Unlimited |
+| `docs/detailed/full_development_guide.md` | Reference | No | Unlimited |
 
 ---
 
@@ -234,6 +412,13 @@ Implementation tracker is over 100 lines. Run `/archive-week` to keep it slim.
 - Brief status updates
 - Archive completed weeks
 
+### Development Guide (Architectural)
+- Keep under 200 lines
+- Focus on essentials: tech stack, architecture, key patterns
+- Extract verbose sections to `docs/detailed/full_development_guide.md`
+- Update only when architecture changes (not daily)
+- No changelogs or version history (use CHANGELOG.md)
+
 ### Daily Log (Tactical)
 - Be detailed - this is for resume context
 - Include file:line references
@@ -244,6 +429,12 @@ Implementation tracker is over 100 lines. Run `/archive-week` to keep it slim.
 - Add decisions and bugs here
 - Keep full history
 - Never auto-loaded
+
+### Full Development Guide (Reference)
+- Lives in `docs/detailed/full_development_guide.md`
+- Contains extracted verbose sections
+- Organized by extraction date
+- Never auto-loaded - only for reference
 
 ---
 
