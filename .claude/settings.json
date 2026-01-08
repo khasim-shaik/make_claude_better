@@ -1,30 +1,4 @@
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./.claude/hooks/session-start.sh",
-            "timeout": 15000
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./.claude/hooks/pre-compact.sh",
-            "timeout": 10000
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Skill(restore)",

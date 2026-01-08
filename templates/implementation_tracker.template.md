@@ -1,31 +1,19 @@
 # Implementation Tracker
 
 **Project**: [Project Name]
-**Current Week**: Week X of Y (MM/DD - MM/DD)
-**Last Updated**: YYYY-MM-DD HH:MM
+**Last Updated**: YYYY-MM-DD
 
 ---
 
-## Executive Summary
+## Summary
 
-[2-3 sentences - high-level status for leadership]
+[2-3 sentences about the project and current status]
 
 **Status**: [On Track / At Risk / Blocked]
-**Progress**: X% complete
 
 ---
 
-## Weekly Roadmap
-
-| Week | Planned | Status |
-|------|---------|--------|
-| Week 1 | [Brief description] | ⏳ |
-| Week 2 | [Brief description] | ⏳ |
-| Week 3 | [Brief description] | ⏳ |
-
----
-
-## Current Week
+## Current Progress
 
 ### Completed
 - [ ] [Task 1]
@@ -38,22 +26,14 @@
 
 ---
 
-## Next Week Preview
+## Next Steps
 
 1. [Priority item 1]
 2. [Priority item 2]
 
 ---
 
-## Active Blockers
-
-| Blocker | Impact | Status |
-|---------|--------|--------|
-| *None* | | |
-
----
-
 ## Quick Links
 
-- Full history: `docs/implementation_archive.md`
 - Dev guide: `docs/development_guide.md`
+- Daily logs: `docs/logs/`

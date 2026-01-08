@@ -1,51 +1,30 @@
 # Make Claude Better
 
-An automated context management system for Claude Code that prevents context loss and eliminates the "morning reload" problem.
+A simple context management system for Claude Code with 3 slash commands.
 
 ## The Problem
 
-Every time you start Claude Code:
-- Claude has no idea what you were working on
-- You spend 30 minutes re-explaining context
-- Large features become impossible across sessions
-- Native auto-compact loses important details
+- Claude loses context when sessions end or context compacts
+- You spend time re-explaining what you were working on
+- Large features are hard to build across sessions
 
 ## The Solution
 
-**Automatic context restoration via Claude Code hooks.**
+Three slash commands to save and restore context:
 
-When you start Claude Code, it automatically knows:
-- What the project is about (architecture, tech stack)
-- Where you are in the roadmap (current week, progress)
-- Exactly where you left off (file, line, approach)
-
-**Before:** "So yesterday I was working on..." *(30 min explaining)*
-
-**After:** "Context restored. Ready to continue?" *(30 seconds)*
+| Command | What it does |
+|---------|--------------|
+| `/restore` | Load context from docs/ |
+| `/save-state` | Save progress to docs/ |
+| `/context-status` | Check token usage |
 
 ---
 
 ## Installation
 
-### For New Projects
-
 ```bash
-# Clone this repo
 git clone https://github.com/khasim-shaik/make_claude_better.git
-
-# Install to your project
 ./make_claude_better/install.sh /path/to/your/project
-```
-
-### For Existing Projects (with CLAUDE.md)
-
-```bash
-# Same command - it will:
-# - Append automation rules to your existing CLAUDE.md
-# - Skip files that already exist
-# - Create settings.json.new if you have existing settings
-
-./install.sh /path/to/your/project
 ```
 
 ### What Gets Installed
@@ -53,23 +32,16 @@ git clone https://github.com/khasim-shaik/make_claude_better.git
 ```
 your-project/
 ├── .claude/
-│   ├── commands/           # Slash commands
+│   ├── commands/
 │   │   ├── restore.md
 │   │   ├── save-state.md
-│   │   ├── context-status.md
-│   │   └── archive-week.md
-│   ├── hooks/              # Automation (the magic)
-│   │   ├── session-start.sh
-│   │   ├── pre-compact.sh
-│   │   └── estimate-tokens.sh
-│   └── settings.json       # Hook configuration
+│   │   └── context-status.md
+│   └── settings.json
 ├── docs/
-│   ├── implementation_tracker.md   # Strategic (roadmap, progress)
-│   ├── implementation_archive.md   # Historical (past weeks)
-│   ├── development_guide.md        # Architectural (how it works)
+│   ├── implementation_tracker.md
+│   ├── development_guide.md
 │   └── logs/
-│       └── YYYY-MM-DD.md           # Tactical (daily work)
-└── CLAUDE.md               # Automation rules (appended)
+└── CLAUDE.md  (rules appended)
 ```
 
 ---
@@ -77,156 +49,47 @@ your-project/
 ## Daily Usage
 
 ### Starting a Session
-
-Just open Claude Code. That's it.
-
-The SessionStart hook automatically:
-1. Reads your implementation tracker (where the project is)
-2. Reads the development guide (how it works)
-3. Reads the most recent daily log (where you left off)
-4. Shows git status and context usage
-
-**You don't need to do anything** - context is restored automatically.
+```
+/restore
+```
+Loads your project context (~5K tokens).
 
 ### During Work
-
-Work normally. Claude follows the rules in CLAUDE.md to:
-- Log completed tasks with timestamps
-- Track current work (file, line, approach)
-- Monitor context usage
+```
+/context-status
+```
+Check token usage periodically.
 
 ### Ending a Session
-
-Run `/save-state` before closing Claude Code.
-
-This saves your current progress to the docs, so next session starts right where you left off.
-
-### If Context Gets High (85%+)
-
-Claude will auto-save state before compacting. You can also:
-1. Run `/save-state` manually
-2. Use `/compact` to trigger compaction
-3. Continue working - state is preserved
-
----
-
-## Slash Commands
-
-| Command | What it does |
-|---------|--------------|
-| `/restore` | Re-read all docs (after manual edits) |
-| `/save-state` | Save current progress to docs |
-| `/context-status` | Check token usage (~X% of 200K) |
-| `/archive-week` | Move completed weeks to archive |
+```
+/save-state
+```
+Saves progress so next session can pick up where you left off.
 
 ---
 
 ## The 3-File System
 
-| File | Purpose | Auto-Loaded |
-|------|---------|-------------|
-| `implementation_tracker.md` | Strategic: roadmap, current week, blockers | Yes |
-| `development_guide.md` | Architectural: how the project works | Yes |
-| `logs/YYYY-MM-DD.md` | Tactical: today's work, where you left off | Yes (most recent) |
-| `implementation_archive.md` | Historical: past weeks, all decisions | No |
+| File | Purpose |
+|------|---------|
+| `implementation_tracker.md` | Roadmap, current progress, blockers |
+| `development_guide.md` | Architecture, tech stack, conventions |
+| `logs/YYYY-MM-DD.md` | Daily work, where you left off |
 
-**Token budget:** ~5-6K tokens on session start, leaving 194K+ for work.
-
----
-
-## Customizing for Your Project
-
-After installation, edit these files:
-
-### `docs/implementation_tracker.md`
-- Add your project name
-- Set current week and roadmap
-- Update completed/in-progress items
-
-### `docs/development_guide.md`
-- Describe your architecture
-- List your tech stack
-- Document coding conventions
-
-### `docs/logs/YYYY-MM-DD.md`
-- Created automatically when you run `/save-state`
-- Tracks daily work with timestamps
+**Token budget:** ~5K tokens to restore, leaving 195K for work.
 
 ---
 
-## How the Hooks Work
+## Customizing
 
-### SessionStart (Auto-Restore)
+After installation, edit:
 
-When Claude Code starts:
-1. Hook fires automatically
-2. `session-start.sh` reads your docs
-3. Output becomes Claude's initial context
-4. Claude knows everything instantly
-
-### PreCompact (Safety Net)
-
-Before context compacts:
-1. Hook fires automatically
-2. `pre-compact.sh` backs up the transcript
-3. Logs the compaction event
-
-### Token Estimation
-
-Real-time token monitoring:
-```bash
-./.claude/hooks/estimate-tokens.sh
-# Output: ✅ Context: 54.3K / 200K tokens (~27%) - Status: good
-```
-
----
-
-## Troubleshooting
-
-### Hook not running?
-
-```bash
-# Check hook is executable
-chmod +x .claude/hooks/*.sh
-
-# Test manually
-CLAUDE_PROJECT_DIR=$(pwd) ./.claude/hooks/session-start.sh
-```
-
-### Context not restored?
-
-1. Check `docs/implementation_tracker.md` exists
-2. Verify `.claude/settings.json` is valid JSON
-3. Run hook manually to see output
-
-### Need to merge settings?
-
-If you had existing settings, the installer created `.claude/settings.json.new`. Add this to your existing settings:
-
-```json
-"hooks": {
-  "SessionStart": [{"matcher": "", "hooks": [{"type": "command", "command": "./.claude/hooks/session-start.sh", "timeout": 15000}]}],
-  "PreCompact": [{"matcher": "", "hooks": [{"type": "command", "command": "./.claude/hooks/pre-compact.sh", "timeout": 10000}]}]
-}
-```
-
----
-
-## Why This Works
-
-| Metric | Native Auto-Compact | This System |
-|--------|---------------------|-------------|
-| Tokens to restore | 25-40K (lossy) | 5-6K (lossless) |
-| Morning reload time | 30 minutes | 30 seconds |
-| Large features | Difficult | Easy |
-| User intervention | Required | None |
+1. `docs/implementation_tracker.md` - Your project roadmap
+2. `docs/development_guide.md` - Your architecture
+3. `docs/logs/` - Created when you run `/save-state`
 
 ---
 
 ## License
 
-MIT - Use freely in your projects.
-
----
-
-**Built to make Claude Code sessions productive from the first message.**
+MIT
